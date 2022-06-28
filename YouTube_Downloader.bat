@@ -41,8 +41,8 @@ setlocal EnableDelayedExpansion
 
 call :GET_DATE_TIME
 
-set VERSION_CURRENT=v1.0.0 - 19/05/2022
-set VERSION_SUPPORTED_YT_DLP=2022.05.18
+set VERSION_CURRENT=v1.0.1 - 28/06/2022
+set VERSION_SUPPORTED_YT_DLP=2022.06.22.1
 :: yt-dlp settings:
 :: The arguments that are always going to be triggered for any downloads:
 set YT_DLP_BASE_ARGUMENTS=--console-title --force-overwrites --geo-bypass --add-metadata
@@ -489,7 +489,7 @@ echo:
 if defined input_resolution (
     set input_resolution=
 )
-set /p "input_resolution=!WHITE!Select your desired resolution ([!BRIGHTMAGENTA!1!WHITE!,!BRIGHTMAGENTA!1!WHITE!,!BRIGHTMAGENTA!!counter[#]!!WHITE!] / [!BRIGHTMAGENTA!A!WHITE!-!BRIGHTMAGENTA!D!WHITE!] / [!BRIGHTMAGENTA!REFRESH!WHITE!]): !BRIGHTMAGENTA!"
+set /p "input_resolution=!WHITE!Select your desired resolution ([!BRIGHTMAGENTA!1!WHITE!,!BRIGHTMAGENTA!1!WHITE!,!BRIGHTMAGENTA!!counter[#]!!WHITE!] / [!BRIGHTMAGENTA!A!WHITE!-!BRIGHTMAGENTA!E!WHITE!] / [!BRIGHTMAGENTA!REFRESH!WHITE!]): !BRIGHTMAGENTA!"
 if /i "!input_resolution!"=="BACK" (
     goto :PROMPT_URL
 ) else if /i "!input_resolution!"=="EXIT" (
@@ -532,6 +532,17 @@ for %%A in (A B C D E) do (
 )
 goto :CHOOSE_RESOLUTION
 :DOWNLOAD_FINISHED
+if defined download_folder (
+    set download_folder=
+)
+for /f "delims=" %%A in ('2^>nul dir "output\" /a:d /b /o:d') do (
+    set "download_folder=output\%%A"
+)
+if defined download_folder (
+    if exist "!download_folder!\" (
+        start "" "!download_folder!\"
+    )
+)
 if defined playlist_url[#] (
     if !playlist_item_counter! lss !playlist_url[#]! (
         set /a playlist_item_counter+=1
@@ -872,18 +883,18 @@ echo:
 echo Current version: !VERSION_CURRENT!
 echo Latest version : !version_last!
 echo:
-<nul set /p="!WHITE!Yes (!BRIGHTMAGENTA!Y!WHITE!) / No (!BRIGHTMAGENTA!N!WHITE!): "
+<nul set /p="!WHITE!Yes (!BRIGHTMAGENTA!Y!WHITE!) / No (!BRIGHTMAGENTA!N!WHITE!): !BRIGHTMAGENTA!"
 choice /n /c YN
 if not !errorlevel!==1 (
     exit /b 0
 )
-if exist "[UPDATED]_Youtube_Downloader.bat" (
-    del /f /q /a "[UPDATED]_Youtube_Downloader.bat" || (
+if exist "[UPDATED]_YouTube_Downloader.bat" (
+    del /f /q /a "[UPDATED]_YouTube_Downloader.bat" || (
         exit /b 1
     )
 )
-curl.exe -f#ko "[UPDATED]_Youtube_Downloader.bat" "https://raw.githubusercontent.com/Illegal-Services/Youtube-Downloader/main/Youtube_Downloader.bat" && (
-    >nul move /y "[UPDATED]_Youtube_Downloader.bat" "%~f0" && (
+curl.exe -f#ko "[UPDATED]_YouTube_Downloader.bat" "https://raw.githubusercontent.com/Illegal-Services/Youtube-Downloader/main/YouTube_Downloader.bat" && (
+    >nul move /y "[UPDATED]_YouTube_Downloader.bat" "%~f0" && (
         call "%~f0" && (
             exit 0
         )
