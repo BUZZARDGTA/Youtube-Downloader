@@ -19,6 +19,9 @@ for /f "tokens=2delims=:." %%A in ('2^>nul chcp') do (
 )
 >nul chcp 65001
 pushd "%~dp0"
+for /f %%A in ('copy /z "%~nx0" nul') do (
+    set "\R=%%A"
+)
 for /f %%A in ('forfiles /m "%~nx0" /c "cmd /c echo 0x1B"') do (
     set "\E=%%A"
 )
@@ -41,8 +44,8 @@ setlocal EnableDelayedExpansion
 
 call :GET_DATE_TIME
 
-set VERSION_CURRENT=v1.0.1 - 28/06/2022
-set VERSION_SUPPORTED_YT_DLP=2022.06.22.1
+set VERSION_CURRENT=v1.0.2 - 30/11/2022
+set VERSION_SUPPORTED_YT_DLP=2022.11.11
 :: yt-dlp settings:
 :: The arguments that are always going to be triggered for any downloads:
 set YT_DLP_BASE_ARGUMENTS=--console-title --force-overwrites --geo-bypass --add-metadata
@@ -208,7 +211,7 @@ for %%A in (infos_head stder_stream playlist_item_counter input_url download_url
 )
 %@DISP_HEAD%
 echo:
-set /p "input_url=!WHITE!Enter an URL: !BRIGHTMAGENTA!"
+set /p "input_url=!WHITE!Enter an URL or [!BRIGHTMAGENTA!EXIT!WHITE!]: !BRIGHTMAGENTA!"
 if defined input_url (
     set "input_url=!input_url:"=!"
 )
@@ -219,7 +222,7 @@ if /i "!input_url!"=="EXIT" (
     goto :_END
 ) else if /i "!input_url!"=="BACK" (
     echo:
-    echo !RED!ERROR:!WHITE! Function "[BACK]" is not supported in the script root.
+    echo !RED!ERROR:!WHITE! Function "!BRIGHTMAGENTA![BACK]!WHITE!" is not supported in the script root.
     %@sleep:?=3%
     goto :PROMPT_URL
 )
@@ -489,7 +492,7 @@ echo:
 if defined input_resolution (
     set input_resolution=
 )
-set /p "input_resolution=!WHITE!Select your desired resolution ([!BRIGHTMAGENTA!1!WHITE!,!BRIGHTMAGENTA!1!WHITE!,!BRIGHTMAGENTA!!counter[#]!!WHITE!] / [!BRIGHTMAGENTA!A!WHITE!-!BRIGHTMAGENTA!E!WHITE!] / [!BRIGHTMAGENTA!REFRESH!WHITE!]): !BRIGHTMAGENTA!"
+set /p "input_resolution=!WHITE!Select your desired resolution ([!BRIGHTMAGENTA!1!WHITE!,!BRIGHTMAGENTA!1!WHITE!,!BRIGHTMAGENTA!!counter[#]!!WHITE!] / [!BRIGHTMAGENTA!A!WHITE!-!BRIGHTMAGENTA!E!WHITE!] / [!BRIGHTMAGENTA!REFRESH!WHITE!]) or [!BRIGHTMAGENTA!BACK!WHITE!] / [!BRIGHTMAGENTA!EXIT!WHITE!]: !BRIGHTMAGENTA!"
 if /i "!input_resolution!"=="BACK" (
     goto :PROMPT_URL
 ) else if /i "!input_resolution!"=="EXIT" (
@@ -675,6 +678,14 @@ goto :CHOOSE_RESOLUTION
 <nul set /p=!WHITE!Press !BRIGHTMAGENTA!{ANY KEY}!WHITE! to exit ...
 >nul pause
 :_END
+echo:
+set text=!WHITE!Exiting !RED!!UNDERLINE!YouTube Downloader!UNDERLINEOFF!!WHITE!
+set counter=0
+for /l %%A in (1,1,3) do (
+    set text=!text! .
+    <nul set /p=!text!!\R!
+    >nul timeout /t 1 /nobreak
+)
 <nul set /p=!\E![0m
 popd
 >nul chcp !CP!
@@ -772,7 +783,7 @@ if defined powershell (
         set date_time=
     )
     for /f "delims=" %%A in (
-        '^>nul chcp 437^& 2^>nul powershell get-date -format "yyyy-MM-dd_HH-mm-ss"^& ^>nul chcp 65001'
+        '^>nul chcp 437^& 2^>nul powershell get-date -format "'yyyy-MM-dd_HH-mm-ss'"^& ^>nul chcp 65001'
     ) do (
         set "date_time=%%A"
     )
