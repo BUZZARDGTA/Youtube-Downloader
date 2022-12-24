@@ -28,6 +28,9 @@ for /f %%A in ('forfiles /m "%~nx0" /c "cmd /c echo 0x1B"') do (
 (set \N=^
 %=leave unchanged=%
 )
+set @PAUSE=^
+<nul set /p=!WHITE!Press !BRIGHTMAGENTA!{ANY KEY}!WHITE! to ? ...^&^
+>nul pause
 set @DISP_HEAD=^
 echo !BRIGHTBLACK!Welcome in !RED!!UNDERLINE!YouTube Downloader!UNDERLINEOFF!!BRIGHTBLACK! by IB_U_Z_Z_A_R_Dl, greetz to server.bat ^^(https://discord.gg/GSVrHag^^)!WHITE!!\N!The script detects all available resolutions, then asks the user in which resolution he wishes to download.!WHITE!!\N!!WHITE!Type anytime !BRIGHTMAGENTA![EXIT]!WHITE! / !BRIGHTMAGENTA![BACK]!WHITE! / !BRIGHTMAGENTA![CTRL+C]!WHITE! for their according behaviour in the script.!WHITE!!\N!!WHITE!Selected file extension output: !BRIGHTBLUE![VIDEO:!FORMAT_VIDEO!]!WHITE! ^^^| !BRIGHTBLUE![AUDIO:!FORMAT_AUDIO!]!WHITE!!\N!!infos_head!
 set @STRIP_WHITE_SPACES=^
@@ -44,7 +47,7 @@ setlocal EnableDelayedExpansion
 
 call :GET_DATE_TIME
 
-set VERSION_CURRENT=v1.0.2 - 30/11/2022
+set VERSION_CURRENT=v1.0.3 - 24/12/2022
 set VERSION_SUPPORTED_YT_DLP=2022.11.11
 :: yt-dlp settings:
 :: The arguments that are always going to be triggered for any downloads:
@@ -123,8 +126,7 @@ call :UPDATER || (
     echo !RED!ERROR:!WHITE! Failed updating. Try updating manually:
     echo https://github.com/Illegal-Services/Youtube-Downloader
     echo:
-    <nul set /p=Press {ANY KEY} to continue ...
-    >nul pause
+    %@PAUSE:?=continue%
     cls
     %@DISP_HEAD%
 )
@@ -133,8 +135,7 @@ for /f "delims=" %%A in ('!yt-dlp.exe! --version') do (
     if not "%%A"=="!VERSION_SUPPORTED_YT_DLP!" (
         echo !YELLOW!WARNING:!WHITE! You are not using the recommended !yt-dlp.exe! v!VERSION_SUPPORTED_YT_DLP!!WHITE!
         echo:
-        <nul set /p=!WHITE!Press !BRIGHTMAGENTA!{ANY KEY}!WHITE! to ignore ...
-        >nul pause
+        %@PAUSE:?=ignore%
     )
 )
 for %%A in (
@@ -541,11 +542,6 @@ if defined download_folder (
 for /f "delims=" %%A in ('2^>nul dir "output\" /a:d /b /o:d') do (
     set "download_folder=output\%%A"
 )
-if defined download_folder (
-    if exist "!download_folder!\" (
-        start "" "!download_folder!\"
-    )
-)
 if defined playlist_url[#] (
     if !playlist_item_counter! lss !playlist_url[#]! (
         set /a playlist_item_counter+=1
@@ -557,11 +553,14 @@ if defined playlist_url[#] (
 )
 echo:
 :LOOP_CHOICE_DOWNLOAD_FINISHED
-<nul set /p=!WHITE!Do you want to go Back in the resolution menu (!BRIGHTMAGENTA!B!WHITE!) or give a New URL (!BRIGHTMAGENTA!N!WHITE!) ?
-choice /n /c BN
+<nul set /p=!WHITE!Do you want to open download folder (!BRIGHTMAGENTA!O!WHITE!), go Back in the resolution menu (!BRIGHTMAGENTA!B!WHITE!) or give a New URL (!BRIGHTMAGENTA!N!WHITE!) ?
+choice /n /c OBN
 if !errorlevel!==1 (
-    goto :CHOOSE_RESOLUTION
+    call :OPEN_DOWNLOAD_FOLDER
+    goto :LOOP_CHOICE_DOWNLOAD_FINISHED
 ) else if !errorlevel!==2 (
+    goto :CHOOSE_RESOLUTION
+) else if !errorlevel!==3 (
     goto :PROMPT_URL
 )
 goto :LOOP_CHOICE_DOWNLOAD_FINISHED
@@ -670,13 +669,11 @@ for %%A in (input_resolution id @arguments) do (
     )
 )
 echo:
-<nul set /p=!WHITE!Press !BRIGHTMAGENTA!{ANY KEY}!WHITE! to continue ...
->nul pause
+%@PAUSE:?=continue%
 goto :CHOOSE_RESOLUTION
 
 :END
-<nul set /p=!WHITE!Press !BRIGHTMAGENTA!{ANY KEY}!WHITE! to exit ...
->nul pause
+%@PAUSE:?=exit%
 :_END
 echo:
 set text=!WHITE!Exiting !RED!!UNDERLINE!YouTube Downloader!UNDERLINEOFF!!WHITE!
@@ -696,8 +693,7 @@ exit /b 0
 echo:
 echo !RED!ERROR:!WHITE! yt-dlp did not found any %1 on URL.
 echo:
-<nul set /p=!WHITE!Press !BRIGHTMAGENTA!{ANY KEY}!WHITE! to continue ...
->nul pause
+%@PAUSE:?=continue%
 exit /b
 
 :DOWNLOAD_START
@@ -708,6 +704,29 @@ if defined @arguments (
 echo !WHITE!
 !yt-dlp.exe!!@yt_dlp_base_arguments!!@arguments! --output "!OUTPUT_TEMPLATE!" "!download_url!" || (
     goto :ERROR_DOWNLOADING
+)
+exit /b
+
+:OPEN_DOWNLOAD_FOLDER
+if defined download_folder (
+    if exist "!download_folder!\" (
+        start "" "!download_folder!\" || (
+            echo !RED!ERROR:!WHITE! Starting the download folder failed.
+            echo !YELLOW!DEBUG:!WHITE!
+            echo download_folder=!download_folder!
+            echo:
+        )
+    ) else (
+        echo !RED!ERROR:!WHITE! The download folder was found but it doesn't seem to exist anymore.
+        echo !YELLOW!DEBUG:!WHITE!
+        echo download_folder=!download_folder!
+        echo:
+    )
+) else (
+    echo !RED!ERROR:!WHITE! Could not retrieve the download folder.
+    echo !YELLOW!DEBUG:!WHITE!
+    echo download_folder=!download_folder!
+    echo:
 )
 exit /b
 
