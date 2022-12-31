@@ -45,10 +45,19 @@ set @STRIP_WHITE_SPACES=^
 set _s=
 setlocal EnableDelayedExpansion
 
-call :GET_DATE_TIME
-
-set VERSION_CURRENT=v1.0.3 - 24/12/2022
+set VERSION_CURRENT=v1.0.4 - 31/12/2022
 set VERSION_SUPPORTED_YT_DLP=2022.11.11
+
+for /f "tokens=4,5delims=. " %%A in ('ver') do (
+    if "%%A.%%B"=="10.0" (
+        for %%C in (UNDERLINE`4 UNDERLINEOFF`24 RED`31 GREEN`32 YELLOW`33 CYAN`36 BRIGHTBLACK`90 BRIGHTBLUE`94 BRIGHTMAGENTA`95 BRIGHTWHITE`97 WHITE`37) do (
+            for /f "tokens=1,2delims=`" %%D in ("%%C") do (
+                set %%D=!\E![%%Em
+            )
+        )
+    )
+)
+
 :: yt-dlp settings:
 :: The arguments that are always going to be triggered for any downloads:
 set YT_DLP_BASE_ARGUMENTS=--console-title --force-overwrites --geo-bypass --add-metadata
@@ -67,36 +76,25 @@ set ITER[SUPPORTED_FORMATS_THUMBNAIL]=jpg png webp
 set FORMAT_THUMBNAIL=
 :: The output template, see: https://github.com/yt-dlp/yt-dlp#output-template
 set "OUTPUT_TEMPLATE=%%(id)s\%%(title)s.%%(ext)s"
-:: Folder or PATH where yt-dlp will extract the downloaded files.
-set "OUTPUT_TEMPLATE=output\[!DATE_TIME!].!OUTPUT_TEMPLATE!"
 
-for /f "tokens=4,5delims=. " %%A in ('ver') do (
-    if "%%A.%%B"=="10.0" (
-        for %%C in (UNDERLINE`4 UNDERLINEOFF`24 RED`31 GREEN`32 YELLOW`33 CYAN`36 BRIGHTBLACK`90 BRIGHTBLUE`94 BRIGHTMAGENTA`95 BRIGHTWHITE`97 WHITE`37) do (
-            for /f "tokens=1,2delims=`" %%D in ("%%C") do (
-                set %%D=!\E![%%Em
-            )
-        )
-    )
-)
-
+:: HERE I'M SPLITING SETTING VARIABLES AND ERRORS HANDLING FOR !@DISP_HEAD! VARIABLE TO BE DISPLAYED PROPERLY.
+set "infos_head=!\N!"
 %@DISP_HEAD%
+call :GET_DATE_TIME || (
+    call :ERROR_FATAL DATE_TIME
+    exit /b 0
+)
+:: HERE I'M SPLITING SETTING VARIABLES AND ERRORS HANDLING FOR !@DISP_HEAD! VARIABLE TO BE DISPLAYED PROPERLY.
 
-if defined ProgramFiles(x86) (
-    set ARCH=64
-) else (
-    set ARCH=86
+:: Folder or PATH where yt-dlp will extract the downloaded files.
+set "OUTPUT_PATH=output\[!DATE_TIME!].!OUTPUT_TEMPLATE!"
+
+if not defined ProgramFiles(x86) (
+    call :ERROR_FATAL ARCH
+    exit /b 0
 )
 for %%A in (yt-dlp.exe ffmpeg.exe ffprobe.exe) do (
-    if %%A==yt-dlp.exe (
-        if !ARCH!==64 (
-            set %%A=lib\yt-dlp.exe
-        ) else (
-            set %%A=lib\yt-dlp_x86.exe
-        )
-    ) else (
-        set %%A=lib\%%A
-    )
+    set %%A=lib\%%A
 )
 if defined file_not_found (
     set file_not_found=
@@ -120,7 +118,6 @@ for %%A in (!yt-dlp.exe! !ffmpeg.exe! !ffprobe.exe! choice.exe findstr.exe) do (
     )
 )
 
-echo:
 echo Searching for a new update ...
 call :UPDATER || (
     echo !RED!ERROR:!WHITE! Failed updating. Try updating manually:
@@ -205,13 +202,13 @@ for %%A in (playlist_url[ line[) do (
         )
     )
 )
-for %%A in (infos_head stder_stream playlist_item_counter input_url download_url) do (
+for %%A in (stder_stream playlist_item_counter input_url download_url) do (
     if defined %%A (
         set %%A=
     )
 )
+set "infos_head=!\N!"
 %@DISP_HEAD%
-echo:
 set /p "input_url=!WHITE!Enter an URL or [!BRIGHTMAGENTA!EXIT!WHITE!]: !BRIGHTMAGENTA!"
 if defined input_url (
     set "input_url=!input_url:"=!"
@@ -384,9 +381,9 @@ for %%A in (@arguments id) do (
     )
 )
 if defined playlist_url[#] (
-    set "infos_head=!WHITE!Infos: !BRIGHTBLUE![URL: !download_url!]!WHITE! | !BRIGHTBLUE![Playlist:!playlist_item_counter!/!playlist_url[#]!]!WHITE!!\N!"
+    set "infos_head=!WHITE!Infos: !BRIGHTBLUE![URL: !download_url!]!WHITE! | !BRIGHTBLUE![Playlist:!playlist_item_counter!/!playlist_url[#]!]!WHITE!!\N!!\N!"
 ) else (
-    set "infos_head=!WHITE!Infos: !BRIGHTBLUE![URL: !download_url!]!WHITE! | !BRIGHTBLUE![Playlist:1/1]!WHITE!!\N!"
+    set "infos_head=!WHITE!Infos: !BRIGHTBLUE![URL: !download_url!]!WHITE! | !BRIGHTBLUE![Playlist:1/1]!WHITE!!\N!!\N!"
 )
 %@DISP_HEAD%
 echo Choose a resolution:
@@ -702,7 +699,7 @@ if defined @arguments (
     call :STRIP_DOUBLE_SPACES @arguments
 )
 echo !WHITE!
-!yt-dlp.exe!!@yt_dlp_base_arguments!!@arguments! --output "!OUTPUT_TEMPLATE!" "!download_url!" || (
+!yt-dlp.exe!!@yt_dlp_base_arguments!!@arguments! --output "!OUTPUT_PATH!" "!download_url!" || (
     goto :ERROR_DOWNLOADING
 )
 exit /b
@@ -810,7 +807,7 @@ if defined powershell (
         exit /b 0
     )
 )
-call :ERROR_FATAL DATE_TIME
+exit /b 1
 
 :CHECK_DATE_TIME
 if not defined %1 (
@@ -882,18 +879,16 @@ for /f "tokens=1-6delims=-_" %%A in ("!%1!") do (
 )
 exit /b 1
 
-:CHECK_NUMBER_BETWEEN_CUSTOM
-if "%~1"=="" exit /b 1
-for /f "delims=0123456789" %%A in ("%~1") do exit /b 1
-for /f "tokens=1,2delims=-" %%A in ("%~2") do (
-    if %~1 lss %%A exit /b 1
-    if %~1 gtr %%B exit /b 1
+:ERROR_FATAL
+<nul set /p="!RED!ERROR:!WHITE! "
+if %1==DATE_TIME (
+    echo YouTube Downloader could not determine the current date and time.
+) else if %1==ARCH (
+    echo YouTube Downloader can't start because it detected your Windows version as x32-bit system.
+    echo        You need a Windows x64-bit system to use YouTube Downloader.
 )
-exit /b 0
-
-:IS_LEAP_YEAR_OR_NOT
-::https://stackoverflow.com/questions/35157817/batch-file-leap-year
-set /a "leap=^!(years%%4) + (^!^!(years%%100)-^!^!(years%%400))"
+echo:
+%@PAUSE:?=continue%
 exit /b
 
 :UPDATER
@@ -931,3 +926,17 @@ curl.exe -f#ko "[UPDATED]_YouTube_Downloader.bat" "https://raw.githubusercontent
     )
 )
 exit /b 1
+
+:IS_LEAP_YEAR_OR_NOT
+::https://stackoverflow.com/questions/35157817/batch-file-leap-year
+set /a "leap=^!(years%%4) + (^!^!(years%%100)-^!^!(years%%400))"
+exit /b
+
+:CHECK_NUMBER_BETWEEN_CUSTOM
+if "%~1"=="" exit /b 1
+for /f "delims=0123456789" %%A in ("%~1") do exit /b 1
+for /f "tokens=1,2delims=-" %%A in ("%~2") do (
+    if %~1 lss %%A exit /b 1
+    if %~1 gtr %%B exit /b 1
+)
+exit /b 0
