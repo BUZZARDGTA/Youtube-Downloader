@@ -45,7 +45,7 @@ set @STRIP_WHITE_SPACES=^
 set _s=
 setlocal EnableDelayedExpansion
 
-set VERSION_CURRENT=v1.0.4 - 31/12/2022
+set VERSION_CURRENT=v1.0.5 - 01/02/2025
 set VERSION_SUPPORTED_YT_DLP=2022.11.11
 
 for /f "tokens=4,5delims=. " %%A in ('ver') do (
@@ -57,6 +57,17 @@ for /f "tokens=4,5delims=. " %%A in ('ver') do (
         )
     )
 )
+
+>nul chcp 437
+>nul 2>&1 powershell /?
+if !errorlevel!==0 (
+    set powershell=1
+) else (
+    if defined powershell (
+        set powershell=
+    )
+)
+>nul chcp 65001
 
 :: yt-dlp settings:
 :: The arguments that are always going to be triggered for any downloads:
@@ -794,10 +805,10 @@ for /f "tokens=2delims==." %%A in ('2^>nul wmic os get Localdatetime /value') do
 call :CHECK_DATE_TIME date_time && (
     exit /b 0
 )
+if defined date_time (
+    set date_time=
+)
 if defined powershell (
-    if defined date_time (
-        set date_time=
-    )
     for /f "delims=" %%A in (
         '^>nul chcp 437^& 2^>nul powershell get-date -format "'yyyy-MM-dd_HH-mm-ss'"^& ^>nul chcp 65001'
     ) do (
