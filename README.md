@@ -10,7 +10,7 @@
 Download videos from youtube.com or other video platforms.<br /><br />
 
 
-[![GitHub latest version](https://img.shields.io/badge/GitHub-Download%20Latest%20Version-2b3137?logo=github&labelColor=2b3137)](https://github.com/Illegal-Services/Illegal_Services/releases/latest)
+[![GitHub latest version](https://img.shields.io/badge/GitHub-Download%20Latest%20Version-2b3137?logo=github&labelColor=2b3137)](https://github.com/BUZZARDGTA/Youtube-Downloader/releases/latest)
 
 <hr>
 
